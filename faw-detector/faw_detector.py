@@ -18,7 +18,7 @@ import time
 import queue
 import threading
 import signal
-import logger
+import logging
 
 from picamera import Color
 from picamera import PiCamera
