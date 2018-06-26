@@ -20,8 +20,6 @@ import threading
 import signal
 import logger
 
-
-
 from picamera import Color
 from picamera import PiCamera
 
@@ -41,7 +39,6 @@ JOY_SOUND = ('C5q', 'E5q', 'C6q')
 SAD_SOUND = ('C6q', 'E5q', 'C5q')
 MODEL_LOAD_SOUND = ('C6w', 'c6w', 'C6w')
 BEEP_SOUND = ('E6q', 'C6q')
-
 
 class Service(object):
 
@@ -69,8 +66,6 @@ class Service(object):
 
     def submit(self, request):
         self._requests.put(request)
-
-
 
 class Player(Service):
     """Controls buzzer."""
@@ -148,9 +143,12 @@ class FawDetector(Service):
                     last_time = cur_time
                     message = get_message(processed_result, args.threshold, args.top_k)
                     print(message)
-                    
+        finally:
+            player.stop()
+            player.join()
+
 def main():
-    
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
             '--input_layer', required=True, default='map/TensorArrayStack/TensorArrayGatherV3', help='Name of input layer.')
@@ -163,7 +161,7 @@ def main():
             help='Sets the number of frames to run for, otherwise runs forever.')
 
     parser.add_argument(
-            '--input_mean', type=float, default=128.0, help='Input mean.')
+        '--input_mean', type=float, default=128.0, help='Input mean.')
     parser.add_argument(
         '--input_std', type=float, default=128.0, help='Input std.')
     parser.add_argument(
@@ -175,7 +173,7 @@ def main():
         type=list,
         default=[],
         help='Input a list of bugs that you want to keep.')
-    parser.add_argument{
+    parser.add_argument(
         '--message_threshold',type=int,default=3,help='Input detection threshold for sending sms'
         )
     args = parser.parse_args()
