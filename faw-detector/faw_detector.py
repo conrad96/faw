@@ -35,7 +35,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 #import send message from locall python file fona
-from ./fona import send_message
+#from ./fona import send_message
 
 JOY_SOUND = ('C5q', 'E5q', 'C6q')
 SAD_SOUND = ('C6q', 'E5q', 'C5q')
@@ -118,13 +118,13 @@ class FawDetector(Service):
 
 
     def detection_made(self, processed_result, detection_logger):
-        if processed_result in args.hunting && detection_logger[processed_result] < 3:
+        if processed_result in args.hunting and detection_logger[processed_result] < 3:
             detection_logger[processed_result] += 1
-        else if detection_logger[processed_result] = args.message_threshold:
+        elif detection_logger[processed_result] == args.message_threshold:
             detection_logger[processed_result] = 0
-        #    send_message(processed_result)
+            #    send_message(processed_result)
         #make noise
-        player.play(BEEP_SOUND)
+            player.play(BEEP_SOUND)
         else:
             return
 
@@ -141,32 +141,29 @@ class FawDetector(Service):
                         if i == args.num_frames or self._done.is_set():
                             break
                         processed_result = process(result, labels, args.output_layer,args.threshold, args.top_k)
-                    #my function to handle sending messages if detection happens at the threshold.
+            #my function to handle sending messages if detection happens at the threshold.
                     detection_made(processed_result)
                     cur_time = time.time()
                     fps = 1.0 / (cur_time - last_time)
                     last_time = cur_time
-
                     message = get_message(processed_result, args.threshold, args.top_k)
-
                     print(message)
-
-
-
-
+                    
 def main():
+    
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--input_layer', required=True, default='map/TensorArrayStack/TensorArrayGatherV3', help='Name of input layer.')
+            '--input_layer', required=True, default='map/TensorArrayStack/TensorArrayGatherV3', help='Name of input layer.')
     parser.add_argument(
-        '--output_layer', required=True, default="prediction", help='Name of output layer.')
+            '--output_layer', required=True, default="prediction", help='Name of output layer.')
     parser.add_argument(
-        '--num_frames',
-        type=int,
-        default=-1,
-        help='Sets the number of frames to run for, otherwise runs forever.')
+            '--num_frames',
+            type=int,
+            default=-1,
+            help='Sets the number of frames to run for, otherwise runs forever.')
+
     parser.add_argument(
-        '--input_mean', type=float, default=128.0, help='Input mean.')
+            '--input_mean', type=float, default=128.0, help='Input mean.')
     parser.add_argument(
         '--input_std', type=float, default=128.0, help='Input std.')
     parser.add_argument(
@@ -194,4 +191,4 @@ def main():
     detector.run(args.input_layer,args.output_layer, args.num_frames, args.input_mean, args.input_std, args.threshold, args.top_k, args.detecting_list, args.message_threshold)
 
 if __name__ == '__main__':
-  main()
+    main()
