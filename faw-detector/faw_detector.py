@@ -18,7 +18,7 @@ import time
 import queue
 import threading
 import signal
-import logger
+import logging
 
 from picamera import Color
 from picamera import PiCamera
@@ -151,9 +151,9 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-            '--input_layer', required=True, default='map/TensorArrayStack/TensorArrayGatherV3', help='Name of input layer.')
+            '--input_layer',  default='map/TensorArrayStack/TensorArrayGatherV3', help='Name of input layer.')
     parser.add_argument(
-            '--output_layer', required=True, default="prediction", help='Name of output layer.')
+            '--output_layer',  default="prediction", help='Name of output layer.')
     parser.add_argument(
             '--num_frames',
             type=int,
@@ -183,7 +183,7 @@ def main():
         name='mobilenet_based_classifier',
         input_shape=(1, 192, 192, 3),
         input_normalizer=(128.0, 128.0),
-        compute_graph=utils.load_compute_graph('~/models/mobilenet_v2_192res_1.0_inat_insect.binaryproto'))
+        compute_graph=utils.load_compute_graph('mobilenet_v2_192res_1.0_inat_insect.binaryproto'))
     labels = read_labels('~/models/mobilenet_v2_192res_1.0_inat_insect_labels.txt')
     detector = FawDetector()
     detector.run(args.input_layer,args.output_layer, args.num_frames, args.input_mean, args.input_std, args.threshold, args.top_k, args.detecting_list, args.message_threshold)
