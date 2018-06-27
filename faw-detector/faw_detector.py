@@ -28,12 +28,10 @@ from aiy.vision.models import utils
 
 from gpiozero import Button
 
-from aiy.leds import Leds
 #import libraries for tone generator
 from aiy.toneplayer import TonePlayer
 
 import aiy._drivers._button
-leds = Leds()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -48,51 +46,6 @@ JOY_SOUND = ('C5q', 'E5q', 'C6q')
 SAD_SOUND = ('C6q', 'E5q', 'C5q')
 MODEL_LOAD_SOUND = ('C6w', 'c6w', 'C6w')
 BEEP_SOUND = ('E6q', 'C6q')
-
-
-
-leds = Leds()
-def process(result, labels, out_tensor_name, threshold, top_k):
-    """Processes inference result and returns labels sorted by confidence."""
-     # MobileNet based classification model returns one result vector.
-    assert len(result.tensors) == 1
-    tensor = result.tensors[out_tensor_name]
-    probs, shape = tensor.data, tensor.shape
-    assert shape.depth == len(labels)
-    pairs = [pair for pair in enumerate(probs) if pair[1] > threshold]
-    pairs = sorted(pairs, key=lambda pair: pair[1], reverse=True)
-    pairs = pairs[0:top_k]
-    return [' %s (%.2f)' % (labels[index], prob) for index, prob in pairs]
-
-def read_labels(label_path):
-    with open(label_path) as label_file:
-        return [label.strip() for label in label_file.readlines()]
-
-
-def get_message(processed_result, threshold, top_k):
-    if processed_result:
-        message = 'Detecting:\n %s' % ('\n'.join(processed_result))
-    else:
-        message = 'Nothing detected when threshold=%.2f, top_k=%d' % (threshold, top_k)
-    return message
-
-
-def detection_made(processed_result, detection_logger, message_threshold, detecting_list):
-    for bug in processed_result:
-        logger.info(bug)
-        if bug in detecting_list:
-            if detection_logger[bug] == message_threshold:
-                logger.info('hasnt met threshold')
-                detection_logger[bug] += 1
-            elif detection_logger[bug] < message_threshold:
-                logger.info(bug)
-                detection_logger[bug] = 0
-                #    send_message(processed_result)
-                #make noise
-                player.play(BEEP_SOUND)
-                return
-        else:
-            return
 
 class Service(object):
 
@@ -133,22 +86,64 @@ class Player(Service):
 
 
 
+def process(result, labels, out_tensor_name, threshold, top_k):
+    """Processes inference result and returns labels sorted by confidence."""
+     # MobileNet based classification model returns one result vector.
+    assert len(result.tensors) == 1
+    tensor = result.tensors[out_tensor_name]
+    probs, shape = tensor.data, tensor.shape
+    assert shape.depth == len(labels)
+    pairs = [pair for pair in enumerate(probs) if pair[1] > threshold]
+    pairs = sorted(pairs, key=lambda pair: pair[1], reverse=True)
+    pairs = pairs[0:top_k]
+    return [' %s (%.2f)' % (labels[index], prob) for index, prob in pairs]
+
+def read_labels(label_path):
+    with open(label_path) as label_file:
+        return [label.strip() for label in label_file.readlines()]
+
+
+def get_message(processed_result, threshold, top_k):
+    if processed_result:
+        message = 'Detecting:\n %s' % ('\n'.join(processed_result))
+    else:
+        message = 'Nothing detected when threshold=%.2f, top_k=%d' % (threshold, top_k)
+    return message
+
+
+def detection_made(processed_result, count, message_threshold, player):
+    for bug in processed_result:
+        logger.info(bug)
+        if bug.find("Moth"):
+            logger.info(count)
+            if count == message_threshold:
+                count += 1
+            elif count < message_threshold:
+                logger.info(bug)
+                count = 0
+                #    send_message(processed_result)
+                #make noise
+                player.play(BEEP_SOUND)
+                return
+        else:
+            return
+
+
+
 class FawDetector(Service):
+
     def __init__(self):
         self._done = threading.Event()
         signal.signal(signal.SIGINT, lambda signal, frame: self.stop())
         signal.signal(signal.SIGTERM, lambda signal, frame: self.stop())
+        
 
     def stop(self):
         logger.info('Stopping...')
         self._done.set()
 
     def run(self,input_layer,output_layer,num_frames, input_mean, input_std, threshold, top_k, detecting_list,message_threshold, model,labels):
-        detection_logger = {}
-        for item in detecting_list:
-            detection_logger.update({item:0})
-
-        #logging.info(detection_logger)
+        count = 0
         logger.info('Starting...')
         player = Player(gpio=22, bpm=10)
         try:
@@ -164,7 +159,7 @@ class FawDetector(Service):
                         #logger.info('Processed result')
 
             #my function to handle sending messages if detection happens at the threshold.
-                        detection_made(processed_result, detection_logger, message_threshold, detecting_list)
+                        detection_made(processed_result, count, message_threshold, player)
                         cur_time = time.time()
                         fps = 1.0 / (cur_time - last_time)
                         last_time = cur_time
@@ -206,7 +201,7 @@ def main():
         'Spodoptera ornithogalli (Yellow-striped Armyworm Moth)','Spodoptera litura (Oriental Leafworm Moth)','Charadra deridens (Laugher Moth)'],
         help='Input a list of bugs that you want to keep.')
     parser.add_argument(
-        '--message_threshold',type=int,default=1,help='Input detection threshold for sending sms'
+        '--message_threshold',type=int,default=4,help='Input detection threshold for sending sms'
         )
     args = parser.parse_args()
     model = inference.ModelDescriptor(
