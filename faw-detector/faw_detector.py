@@ -28,7 +28,7 @@ from aiy.vision.models import utils
 
 from gpiozero import Button
 from aiy.pins import BUTTON_GPIO_PIN
-from aiy.pins import LED_1
+from aiy.pins import LED_2
 from gpiozero import LED
 
 #import libraries for tone generator
@@ -88,7 +88,7 @@ def detection_made(processed_result, detection_logger, message_threshold, detect
                 return
         else:
             return
-def toggle(switch):
+def toggle(switch, led):
     switch = not switch
     if switch == False:
         led = led.off
@@ -177,7 +177,7 @@ class FawDetector(Service):
 
 def main():
     switch = True
-    button.when_pressed(toggle(switch))
+    button.when_pressed(toggle(switch, led))
     parser = argparse.ArgumentParser()
     parser.add_argument(
             '--input_layer',  default='map/TensorArrayStack/TensorArrayGatherV3', help='Name of input layer.')
