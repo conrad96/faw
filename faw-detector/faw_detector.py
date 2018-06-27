@@ -26,6 +26,11 @@ from picamera import PiCamera
 from aiy.vision import inference
 from aiy.vision.models import utils
 
+from gpiozero import Button
+from aiy.pins import BUTTON_GPIO_PIN
+from aiy.pins import LED_1
+from gpiozero import LED
+
 #import libraries for tone generator
 from aiy.toneplayer import TonePlayer
 
@@ -39,6 +44,9 @@ JOY_SOUND = ('C5q', 'E5q', 'C6q')
 SAD_SOUND = ('C6q', 'E5q', 'C5q')
 MODEL_LOAD_SOUND = ('C6w', 'c6w', 'C6w')
 BEEP_SOUND = ('E6q', 'C6q')
+
+button = Button(BUTTON_GPIO_PIN)
+led = LED(LED_2)
 
 def process(result, labels, out_tensor_name, threshold, top_k):
     """Processes inference result and returns labels sorted by confidence."""
@@ -69,7 +77,7 @@ def get_message(processed_result, threshold, top_k):
 
 def detection_made(processed_result, detection_logger, message_threshold, detecting_list):
     for bug in processed_result:
-        if bug in detecting_list: 
+        if bug in detecting_list:
             if detection_logger[bug] < message_threshold:
                 detection_logger[bug] += 1
             elif detection_logger[bug] == message_threshold:
@@ -80,6 +88,12 @@ def detection_made(processed_result, detection_logger, message_threshold, detect
                 return
         else:
             return
+def toggle(switch):
+    switch = not switch
+    if switch == False:
+        led = led.off
+    else:
+        led = led.on
 
 class Service(object):
 
@@ -125,7 +139,7 @@ class FawDetector(Service):
         self._done = threading.Event()
         signal.signal(signal.SIGINT, lambda signal, frame: self.stop())
         signal.signal(signal.SIGTERM, lambda signal, frame: self.stop())
-        
+
     def stop(self):
         logger.info('Stopping...')
         self._done.set()
@@ -149,7 +163,7 @@ class FawDetector(Service):
                             break
                         processed_result = process(result, labels, output_layer,threshold, top_k)
                         logger.info('Processed result')
-                        
+
             #my function to handle sending messages if detection happens at the threshold.
                         detection_made(processed_result, detection_logger, message_threshold, detecting_list)
                         cur_time = time.time()
@@ -162,7 +176,8 @@ class FawDetector(Service):
             player.join()
 
 def main():
-
+    switch = True
+    button.when_pressed(toggle(switch))
     parser = argparse.ArgumentParser()
     parser.add_argument(
             '--input_layer',  default='map/TensorArrayStack/TensorArrayGatherV3', help='Name of input layer.')
@@ -185,7 +200,7 @@ def main():
     parser.add_argument(
         '--detecting_list',
         type=list,
-        default=['Biston betularia (Peppered Moth)','Spodoptera litura (Oriental Leafworm Moth)'],
+        default=['Biston betularia (Peppered Moth)','Spodoptera litura (Oriental Leafworm Moth)','Utetheisa ornatrix (Ornate Bella Moth)','Polygrammate hebraeicum (Hebrew Moth)','Palpita magniferalis (Splendid Palpita Moth) (0.14)'],
         help='Input a list of bugs that you want to keep.')
     parser.add_argument(
         '--message_threshold',type=int,default=1,help='Input detection threshold for sending sms'
@@ -198,6 +213,7 @@ def main():
         compute_graph=utils.load_compute_graph('mobilenet_v2_192res_1.0_inat_insect.binaryproto'))
     labels = read_labels("/home/pi/models/mobilenet_v2_192res_1.0_inat_insect_labels.txt")
     detector = FawDetector()
+
     detector.run(args.input_layer,args.output_layer, args.num_frames, args.input_mean, args.input_std, args.threshold, args.top_k, args.detecting_list, args.message_threshold, model, labels)
 
 if __name__ == '__main__':
