@@ -27,12 +27,13 @@ from aiy.vision import inference
 from aiy.vision.models import utils
 
 from gpiozero import Button
-from aiy.pins import BUTTON_GPIO_PIN
-from aiy.pins import LED_2
-from gpiozero import LED
 
+from aiy.leds import Leds
 #import libraries for tone generator
 from aiy.toneplayer import TonePlayer
+
+import aiy._drivers._button
+leds = Leds()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -40,14 +41,17 @@ logger = logging.getLogger(__name__)
 #import send message from locall python file fona
 #from ./fona import send_message
 
+
+GREEN = (0x00,0xFF,0x00)
+
 JOY_SOUND = ('C5q', 'E5q', 'C6q')
 SAD_SOUND = ('C6q', 'E5q', 'C5q')
 MODEL_LOAD_SOUND = ('C6w', 'c6w', 'C6w')
 BEEP_SOUND = ('E6q', 'C6q')
 
-button = Button(BUTTON_GPIO_PIN)
-led = LED(LED_2)
+  
 
+leds = Leds()
 def process(result, labels, out_tensor_name, threshold, top_k):
     """Processes inference result and returns labels sorted by confidence."""
      # MobileNet based classification model returns one result vector.
@@ -73,14 +77,15 @@ def get_message(processed_result, threshold, top_k):
     return message
 
 
-
-
 def detection_made(processed_result, detection_logger, message_threshold, detecting_list):
     for bug in processed_result:
+        logger.info(bug)
         if bug in detecting_list:
-            if detection_logger[bug] < message_threshold:
+            if detection_logger[bug] == message_threshold:
+                logger.info('hasnt met threshold')
                 detection_logger[bug] += 1
-            elif detection_logger[bug] == message_threshold:
+            elif detection_logger[bug] < message_threshold:
+                logger.info(bug)
                 detection_logger[bug] = 0
                 #    send_message(processed_result)
                 #make noise
@@ -88,14 +93,6 @@ def detection_made(processed_result, detection_logger, message_threshold, detect
                 return
         else:
             return
-
-def switch(boolean):
-    boolean = not boolean
-    if switch == True:
-        led = led.off
-    else:
-        led = led.on
-    return boolean
 
 class Service(object):
 
@@ -151,7 +148,7 @@ class FawDetector(Service):
         for item in detecting_list:
             detection_logger.update({item:0})
 
-        logging.info(detection_logger)
+        #logging.info(detection_logger)
         logger.info('Starting...')
         player = Player(gpio=22, bpm=10)
         try:
@@ -164,7 +161,7 @@ class FawDetector(Service):
                         if i == num_frames or self._done.is_set():
                             break
                         processed_result = process(result, labels, output_layer,threshold, top_k)
-                        logger.info('Processed result')
+                        #logger.info('Processed result')
 
             #my function to handle sending messages if detection happens at the threshold.
                         detection_made(processed_result, detection_logger, message_threshold, detecting_list)
@@ -172,14 +169,13 @@ class FawDetector(Service):
                         fps = 1.0 / (cur_time - last_time)
                         last_time = cur_time
                         message = get_message(processed_result, threshold, top_k)
-                        logger.info(message)
+                       # logger.info(message)
         finally:
             player.stop()
             player.join()
 
 def main():
-    boolean = True
-    button.when_pressed(switch(boolean))
+
 
 
     parser = argparse.ArgumentParser()
