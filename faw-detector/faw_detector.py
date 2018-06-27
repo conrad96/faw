@@ -57,6 +57,19 @@ def read_labels(label_path):
     with open(label_path) as label_file:
         return [label.strip() for label in label_file.readlines()]
 
+
+
+def detection_made(processed_result, detection_logger):
+    if processed_result in args.hunting and detection_logger[processed_result] < args.message_threshold:
+        detection_logger[processed_result] += 1
+    elif detection_logger[processed_result] == args.message_threshold:
+        detection_logger[processed_result] = 0
+        #    send_message(processed_result)
+    #make noise
+        player.play(BEEP_SOUND)
+    else:
+        return
+
 class Service(object):
 
     def __init__(self):
@@ -116,19 +129,8 @@ class FawDetector(Service):
 
 
 
-
-    def detection_made(self, processed_result, detection_logger):
-        if processed_result in args.hunting and detection_logger[processed_result] < 3:
-            detection_logger[processed_result] += 1
-        elif detection_logger[processed_result] == args.message_threshold:
-            detection_logger[processed_result] = 0
-            #    send_message(processed_result)
-        #make noise
-            player.play(BEEP_SOUND)
-        else:
-            return
-
     def run(self,input_layer,output_layer,num_frames, input_mean, input_std, threshold, top_k, detecting_list,message_threshold, model,labels):
+
         logger.info('Starting...')
         player = Player(gpio=22, bpm=10)
         try:
@@ -141,6 +143,7 @@ class FawDetector(Service):
                         if i == num_frames or self._done.is_set():
                             break
                         processed_result = process(result, labels, output_layer,threshold, top_k)
+                        logger.info('Processed result')
             #my function to handle sending messages if detection happens at the threshold.
                     detection_made(processed_result)
                     cur_time = time.time()
@@ -176,7 +179,7 @@ def main():
     parser.add_argument(
         '--detecting_list',
         type=list,
-        default=[],
+        default=['Biston betularia (Peppered Moth)','Spodoptera litura (Oriental Leafworm Moth)'],
         help='Input a list of bugs that you want to keep.')
     parser.add_argument(
         '--message_threshold',type=int,default=3,help='Input detection threshold for sending sms'
