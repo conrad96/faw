@@ -49,7 +49,7 @@ SAD_SOUND = ('C6q', 'E5q', 'C5q')
 MODEL_LOAD_SOUND = ('C6w', 'c6w', 'C6w')
 BEEP_SOUND = ('E6q', 'C6q')
 
-  
+
 
 leds = Leds()
 def process(result, labels, out_tensor_name, threshold, top_k):
@@ -200,7 +200,10 @@ def main():
     parser.add_argument(
         '--detecting_list',
         type=list,
-        default=['Biston betularia (Peppered Moth)','Spodoptera litura (Oriental Leafworm Moth)','Utetheisa ornatrix (Ornate Bella Moth)','Polygrammate hebraeicum (Hebrew Moth)','Palpita magniferalis (Splendid Palpita Moth) (0.14)'],
+        default=['Biston betularia (Peppered Moth)','Spodoptera litura (Oriental Leafworm Moth)','Utetheisa ornatrix (Ornate Bella Moth)',
+        'Polygrammate hebraeicum (Hebrew Moth)','Palpita magniferalis (Splendid Palpita Moth) (0.14)','Hyles lineata (White-lined Sphinx Moth)','Hemileuca eglanterina (Western Sheep Moth)',
+        'Ceratomia undulosa (Waved Sphinx Moth)','Nadata gibbosa (White-dotted Prominent Moth)','Lophocampa caryae (Hickory Tussock Moth)',
+        'Spodoptera ornithogalli (Yellow-striped Armyworm Moth)','Spodoptera litura (Oriental Leafworm Moth)','Charadra deridens (Laugher Moth)'],
         help='Input a list of bugs that you want to keep.')
     parser.add_argument(
         '--message_threshold',type=int,default=1,help='Input detection threshold for sending sms'
