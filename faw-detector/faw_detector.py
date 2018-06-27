@@ -88,9 +88,9 @@ def detection_made(processed_result, detection_logger, message_threshold, detect
                 return
         else:
             return
-def toggle(switch):
-    switch = not switch
-    if switch == False:
+
+def checkSwitch(switch):
+    if switch == True:
         led = led.off
     else:
         led = led.on
@@ -177,7 +177,9 @@ class FawDetector(Service):
 
 def main():
     switch = True
-    button.when_pressed(toggle(switch))
+    button.when_pressed(switch = not switch)
+    checkSwitch(switch)
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
             '--input_layer',  default='map/TensorArrayStack/TensorArrayGatherV3', help='Name of input layer.')
