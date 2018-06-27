@@ -53,22 +53,33 @@ def process(result, labels, out_tensor_name, threshold, top_k):
     return [' %s (%.2f)' % (labels[index], prob) for index, prob in pairs]
 
 def read_labels(label_path):
-    print(label_path)
     with open(label_path) as label_file:
         return [label.strip() for label in label_file.readlines()]
 
 
-
-def detection_made(processed_result, detection_logger):
-    if processed_result in args.hunting and detection_logger[processed_result] < args.message_threshold:
-        detection_logger[processed_result] += 1
-    elif detection_logger[processed_result] == args.message_threshold:
-        detection_logger[processed_result] = 0
-        #    send_message(processed_result)
-    #make noise
-        player.play(BEEP_SOUND)
+def get_message(processed_result, threshold, top_k):
+    if processed_result:
+        message = 'Detecting:\n %s' % ('\n'.join(processed_result))
     else:
-        return
+        message = 'Nothing detected when threshold=%.2f, top_k=%d' % (threshold, top_k)
+    return message
+
+
+
+
+def detection_made(processed_result, detection_logger, message_threshold, detecting_list):
+    for bug in processed_result:
+        if bug in detecting_list: 
+            if detection_logger[bug] < message_threshold:
+                detection_logger[bug] += 1
+            elif detection_logger[bug] == message_threshold:
+                detection_logger[bug] = 0
+                #    send_message(processed_result)
+                #make noise
+                player.play(BEEP_SOUND)
+                return
+        else:
+            return
 
 class Service(object):
 
@@ -114,23 +125,17 @@ class FawDetector(Service):
         self._done = threading.Event()
         signal.signal(signal.SIGINT, lambda signal, frame: self.stop())
         signal.signal(signal.SIGTERM, lambda signal, frame: self.stop())
-        self._detection_logger = {}
-
+        
     def stop(self):
         logger.info('Stopping...')
         self._done.set()
 
-    def get_message(self, processed_result, threshold, top_k):
-        if processed_result:
-            message = 'Detecting:\n %s' % ('\n'.join(processed_result))
-        else:
-            message = 'Nothing detected when threshold=%.2f, top_k=%d' % (threshold, top_k)
-            return message
-
-
-
     def run(self,input_layer,output_layer,num_frames, input_mean, input_std, threshold, top_k, detecting_list,message_threshold, model,labels):
+        detection_logger = {}
+        for item in detecting_list:
+            detection_logger.update({item:0})
 
+        logging.info(detection_logger)
         logger.info('Starting...')
         player = Player(gpio=22, bpm=10)
         try:
@@ -144,13 +149,14 @@ class FawDetector(Service):
                             break
                         processed_result = process(result, labels, output_layer,threshold, top_k)
                         logger.info('Processed result')
+                        
             #my function to handle sending messages if detection happens at the threshold.
-                    detection_made(processed_result)
-                    cur_time = time.time()
-                    fps = 1.0 / (cur_time - last_time)
-                    last_time = cur_time
-                    message = get_message(processed_result, threshold, top_k)
-                    print(message)
+                        detection_made(processed_result, detection_logger, message_threshold, detecting_list)
+                        cur_time = time.time()
+                        fps = 1.0 / (cur_time - last_time)
+                        last_time = cur_time
+                        message = get_message(processed_result, threshold, top_k)
+                        logger.info(message)
         finally:
             player.stop()
             player.join()
@@ -182,7 +188,7 @@ def main():
         default=['Biston betularia (Peppered Moth)','Spodoptera litura (Oriental Leafworm Moth)'],
         help='Input a list of bugs that you want to keep.')
     parser.add_argument(
-        '--message_threshold',type=int,default=3,help='Input detection threshold for sending sms'
+        '--message_threshold',type=int,default=1,help='Input detection threshold for sending sms'
         )
     args = parser.parse_args()
     model = inference.ModelDescriptor(
@@ -192,7 +198,6 @@ def main():
         compute_graph=utils.load_compute_graph('mobilenet_v2_192res_1.0_inat_insect.binaryproto'))
     labels = read_labels("/home/pi/models/mobilenet_v2_192res_1.0_inat_insect_labels.txt")
     detector = FawDetector()
-    print(args)
     detector.run(args.input_layer,args.output_layer, args.num_frames, args.input_mean, args.input_std, args.threshold, args.top_k, args.detecting_list, args.message_threshold, model, labels)
 
 if __name__ == '__main__':
