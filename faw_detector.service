@@ -1,0 +1,10 @@
+[Unit]
+Description= FAW Detection
+[Service]
+Type=simple
+Restart=no
+User=pi
+ExecStart=/usr/bin/python3 /home/pi/AIY-projects-python/src/examples/vision/faw-detector/faw_detector.py
+
+[Install]
+WantedBy=multi-user.target
