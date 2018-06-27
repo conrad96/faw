@@ -28,7 +28,7 @@ from aiy.vision.models import utils
 
 from gpiozero import Button
 from aiy.pins import BUTTON_GPIO_PIN
-from aiy.pins import LED_1
+from aiy.pins import LED_2
 from gpiozero import LED
 
 #import libraries for tone generator
