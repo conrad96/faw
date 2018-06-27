@@ -40,6 +40,18 @@ SAD_SOUND = ('C6q', 'E5q', 'C5q')
 MODEL_LOAD_SOUND = ('C6w', 'c6w', 'C6w')
 BEEP_SOUND = ('E6q', 'C6q')
 
+def process(result, labels, out_tensor_name, threshold, top_k):
+    """Processes inference result and returns labels sorted by confidence."""
+     # MobileNet based classification model returns one result vector.
+    assert len(result.tensors) == 1
+    tensor = result.tensors[out_tensor_name]
+    probs, shape = tensor.data, tensor.shape
+    assert shape.depth == len(labels)
+    pairs = [pair for pair in enumerate(probs) if pair[1] > threshold]
+    pairs = sorted(pairs, key=lambda pair: pair[1], reverse=True)
+    pairs = pairs[0:top_k]
+    return [' %s (%.2f)' % (labels[index], prob) for index, prob in pairs]
+
 def read_labels(label_path):
     print(label_path)
     with open(label_path) as label_file:
@@ -103,18 +115,6 @@ class FawDetector(Service):
             return message
 
 
-
-    def process(self, result, labels, out_tensor_name, threshold, top_k):
-      """Processes inference result and returns labels sorted by confidence."""
-      # MobileNet based classification model returns one result vector.
-      assert len(result.tensors) == 1
-      tensor = result.tensors[out_tensor_name]
-      probs, shape = tensor.data, tensor.shape
-      assert shape.depth == len(labels)
-      pairs = [pair for pair in enumerate(probs) if pair[1] > threshold]
-      pairs = sorted(pairs, key=lambda pair: pair[1], reverse=True)
-      pairs = pairs[0:top_k]
-      return [' %s (%.2f)' % (labels[index], prob) for index, prob in pairs]
 
 
     def detection_made(self, processed_result, detection_logger):
