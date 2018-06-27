@@ -89,11 +89,13 @@ def detection_made(processed_result, detection_logger, message_threshold, detect
         else:
             return
 
-def checkSwitch(switch):
+def switch(boolean):
+    boolean = not boolean
     if switch == True:
         led = led.off
     else:
         led = led.on
+    return boolean
 
 class Service(object):
 
@@ -176,9 +178,9 @@ class FawDetector(Service):
             player.join()
 
 def main():
-    switch = True
-    button.when_pressed(switch = not switch)
-    checkSwitch(switch)
+    boolean = True
+    button.when_pressed(switch(boolean))
+
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
