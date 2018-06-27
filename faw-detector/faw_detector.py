@@ -40,6 +40,11 @@ SAD_SOUND = ('C6q', 'E5q', 'C5q')
 MODEL_LOAD_SOUND = ('C6w', 'c6w', 'C6w')
 BEEP_SOUND = ('E6q', 'C6q')
 
+def read_labels(label_path):
+    print(label_path)
+    with open(label_path) as label_file:
+        return [label.strip() for label in label_file.readlines()]
+
 class Service(object):
 
     def __init__(self):
@@ -77,9 +82,7 @@ class Player(Service):
     def play(self, sound):
       self.submit(sound)
 
-def read_labels(label_path):
-    with open(label_path) as label_file:
-      return [label.strip() for label in label_file.readlines()]
+
 
 class FawDetector(Service):
     def __init__(self):
@@ -98,6 +101,8 @@ class FawDetector(Service):
         else:
             message = 'Nothing detected when threshold=%.2f, top_k=%d' % (threshold, top_k)
             return message
+
+
 
     def process(self, result, labels, out_tensor_name, threshold, top_k):
       """Processes inference result and returns labels sorted by confidence."""
@@ -133,15 +138,15 @@ class FawDetector(Service):
                     logger.info('Model loaded.')
                     player.play(MODEL_LOAD_SOUND)
                     for i, result in enumerate(camera_inference.run()):
-                        if i == args.num_frames or self._done.is_set():
+                        if i == num_frames or self._done.is_set():
                             break
-                        processed_result = process(result, labels, args.output_layer,args.threshold, args.top_k)
+                        processed_result = process(result, labels, output_layer,threshold, top_k)
             #my function to handle sending messages if detection happens at the threshold.
                     detection_made(processed_result)
                     cur_time = time.time()
                     fps = 1.0 / (cur_time - last_time)
                     last_time = cur_time
-                    message = get_message(processed_result, args.threshold, args.top_k)
+                    message = get_message(processed_result, threshold, top_k)
                     print(message)
         finally:
             player.stop()
@@ -177,16 +182,15 @@ def main():
         '--message_threshold',type=int,default=3,help='Input detection threshold for sending sms'
         )
     args = parser.parse_args()
-    for item in args.detecting_list:
-        detection_logger.item = 0
     model = inference.ModelDescriptor(
         name='mobilenet_based_classifier',
         input_shape=(1, 192, 192, 3),
         input_normalizer=(128.0, 128.0),
         compute_graph=utils.load_compute_graph('mobilenet_v2_192res_1.0_inat_insect.binaryproto'))
-    labels = read_labels('~/models/mobilenet_v2_192res_1.0_inat_insect_labels.txt')
+    labels = read_labels("/home/pi/models/mobilenet_v2_192res_1.0_inat_insect_labels.txt")
     detector = FawDetector()
-    detector.run(args.input_layer,args.output_layer, args.num_frames, args.input_mean, args.input_std, args.threshold, args.top_k, args.detecting_list, args.message_threshold)
+    print(args)
+    detector.run(args.input_layer,args.output_layer, args.num_frames, args.input_mean, args.input_std, args.threshold, args.top_k, args.detecting_list, args.message_threshold, model, labels)
 
 if __name__ == '__main__':
     main()
