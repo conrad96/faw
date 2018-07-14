@@ -189,7 +189,7 @@ def main():
     parser.add_argument(
         '--input_std', type=float, default=128.0, help='Input std.')
     parser.add_argument(
-        '--threshold', type=float, default=0.1,help='Threshold for classification score (from output tensor).')
+        '--threshold', type=float, default=0.6,help='Threshold for classification score (from output tensor).')
     parser.add_argument(
         '--top_k', type=int, default=3, help='Keep at most top_k labels.')
     parser.add_argument(
